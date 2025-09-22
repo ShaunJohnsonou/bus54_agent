@@ -255,11 +255,7 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    # Sidebar (collapsed) with live-updating Agent Logs
-    agent_logs_placeholder = st.sidebar.empty()
-
-    # Initial render (empty state or last known)
-    # _render_agent_logs(agent_logs_placeholder)
+    # Sidebar removed
 
     logo_col, heading_col = st.columns([6, 1])
     with logo_col:
@@ -292,12 +288,12 @@ def main():
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Top-right Download Ticket button (only if ticket.html exists)
+        # Top-right Generate Ticket button (only if ticket.html exists)
         download_button_area = st.empty()
         ticket_path_exists = os.path.exists("ticket.html")
         if ticket_path_exists:
             with download_button_area:
-                if st.button("Download Ticket", key="header_download_ticket"):
+                if st.button("Generate Ticket", key="header_download_ticket"):
                     from streamlit.components.v1 import html as _st_html
                     import base64 as _b64
                     try:
@@ -599,7 +595,7 @@ def main():
                                 st.session_state["ticket_html_data_url"] = data_url
                                 st.session_state["ticket_html_filename"] = html_filename
 
-                                return f"Ticket HTML generated for {departure_location} → {destination} at {departure_time}. Use 'Download Ticket' to open."
+                                return f"Your ticket has been generated for {departure_location} → {destination} at {departure_time}. The generated ticket can be downloaded above via the 'Generate Ticket' button."
 
                             def book_bus_ticket(
                                 departure_time: str, 
