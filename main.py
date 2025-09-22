@@ -286,6 +286,9 @@ def main():
             if "messages" in st.session_state:
                 st.session_state.messages = []
             st.rerun()
+        # Manual refresh button to force a full rerun
+        if st.button("Refresh", use_container_width=True):
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Top-right Generate Ticket button (only if ticket.html exists)
