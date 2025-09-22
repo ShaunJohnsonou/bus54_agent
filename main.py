@@ -293,6 +293,7 @@ def main():
 
         # Top-right Generate Ticket button (only if ticket.html exists)
         download_button_area = st.empty()
+        import os
         ticket_path_exists = os.path.exists("ticket.html")
         if ticket_path_exists:
             with download_button_area:
@@ -300,10 +301,24 @@ def main():
                     from streamlit.components.v1 import html as _st_html
                     import base64 as _b64
                     try:
+                        # Read the original ticket.html
                         with open("ticket.html", "r", encoding="utf-8") as _f:
                             html_raw = _f.read()
+                        
+                        # Create an exact copy with a new name
+                        with open("ticket_copy.html", "w", encoding="utf-8") as _f:
+                            _f.write(html_raw)
+                        
+                        # Delete the original ticket.html
+                        os.remove("ticket.html")
+                        
                     except Exception:
                         html_raw = st.session_state.get("ticket_html") or "<html><body><p>Ticket not found.</p></body></html>"
+                        # Create the copy even if original doesn't exist
+                        with open("ticket_copy.html", "w", encoding="utf-8") as _f:
+                            _f.write(html_raw)
+                    
+                    # Display the recreated ticket
                     b64 = _b64.b64encode(html_raw.encode("utf-8")).decode("utf-8")
                     _st_html(f"""
                     <script>
@@ -318,6 +333,7 @@ def main():
                       }})();
                     </script>
                     """, height=0)
+                
 
     # Initialize chat history in session state if not present
     if "messages" not in st.session_state:
