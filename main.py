@@ -70,6 +70,22 @@ if "gathered_data_history" not in st.session_state:
 if "operations" not in st.session_state:
     st.session_state.operations = []
 
+# Initialize ticket-related session state defaults
+if "ticket_pdf_ready" not in st.session_state:
+    st.session_state["ticket_pdf_ready"] = False
+if "ticket_pdf_bytes" not in st.session_state:
+    st.session_state["ticket_pdf_bytes"] = None
+if "ticket_pdf_filename" not in st.session_state:
+    st.session_state["ticket_pdf_filename"] = None
+if "ticket_ready" not in st.session_state:
+    st.session_state["ticket_ready"] = False
+if "ticket_html_data_url" not in st.session_state:
+    st.session_state["ticket_html_data_url"] = None
+if "ticket_html_filename" not in st.session_state:
+    st.session_state["ticket_html_filename"] = None
+if "ticket_html" not in st.session_state:
+    st.session_state["ticket_html"] = None
+
 # Message to data mapping for robust tracking
 if "message_data_mapping" not in st.session_state:
     st.session_state.message_data_mapping = {}
@@ -267,10 +283,42 @@ def main():
             st.session_state.data_gathering_agent_chat_history = []
             st.session_state.user_friendly_response_agent_chat_history = []
             st.session_state.gathered_data_history = []
+            # Reset ticket state
+            st.session_state["ticket_ready"] = False
+            st.session_state["ticket_html_data_url"] = None
+            st.session_state["ticket_html_filename"] = None
             if "messages" in st.session_state:
                 st.session_state.messages = []
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
+
+        # Top-right Download Ticket button (only if ticket.html exists)
+        download_button_area = st.empty()
+        ticket_path_exists = os.path.exists("ticket.html")
+        if ticket_path_exists:
+            with download_button_area:
+                if st.button("Download Ticket", key="header_download_ticket"):
+                    from streamlit.components.v1 import html as _st_html
+                    import base64 as _b64
+                    try:
+                        with open("ticket.html", "r", encoding="utf-8") as _f:
+                            html_raw = _f.read()
+                    except Exception:
+                        html_raw = st.session_state.get("ticket_html") or "<html><body><p>Ticket not found.</p></body></html>"
+                    b64 = _b64.b64encode(html_raw.encode("utf-8")).decode("utf-8")
+                    _st_html(f"""
+                    <script>
+                      (function() {{
+                        const html = atob('{b64}');
+                        const w = window.open('', '_blank');
+                        if (w) {{
+                          w.document.open();
+                          w.document.write(html);
+                          w.document.close();
+                        }}
+                      }})();
+                    </script>
+                    """, height=0)
 
     # Initialize chat history in session state if not present
     if "messages" not in st.session_state:
@@ -442,6 +490,117 @@ def main():
                                     # Return empty list for any other errors (permissions, encoding, etc.)
                                     return []
 
+                            def download_pdf(departure_time: str, departure_location: str, arrival_time: str, destination: str, bus_name: str):
+                                """
+                                Generates an HTML ticket document with the provided information.
+                                
+                                Args:
+                                    departure_time (str): The time of departure (e.g., "08:00")
+                                    departure_location (str): The location of departure (e.g., "Lagos")
+                                    arrival_time (str): The time of arrival (e.g., "14:30")
+                                    destination (str): The destination location (e.g., "Abuja")
+                                    bus_name (str): The name of the bus service (e.g., "God is Good Motors")
+                                """
+                                import base64
+                                import uuid as _uuid
+                                from datetime import datetime as _dt
+                                brand_hex = "#0066cc"
+
+                                customer_name = None
+                                try:
+                                    if isinstance(user_information, dict):
+                                        first = user_information.get("name") or ""
+                                        last = user_information.get("surname") or ""
+                                        full_name = f"{first} {last}".strip()
+                                        customer_name = full_name if full_name else None
+                                except Exception:
+                                    customer_name = None
+
+                                issued_at = _dt.now().strftime("%Y-%m-%d %H:%M")
+                                ticket_id = str(_uuid.uuid4())[:8].upper()
+
+                                html_content = f"""
+                                <!doctype html>
+                                <html lang=\"en\">
+                                  <head>
+                                    <meta charset=\"utf-8\"/>
+                                    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>
+                                    <title>Bus 54 Ticket</title>
+                                    <style>
+                                      body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; background:#f5f8fa; margin:0; padding:24px; }}
+                                      .header {{ background:{brand_hex}; color:#fff; padding:20px 24px; display:flex; align-items:center; }}
+                                      .header h1 {{ margin:0 0 0 12px; font-size:22px; font-weight:700; }}
+                                      .ticket {{ background:#fff; border:1px solid {brand_hex}; border-radius:10px; box-shadow:0 1px 3px rgba(0,102,204,0.2); margin-top:16px; padding:20px; }}
+                                      .grid {{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:10px; }}
+                                      .label {{ color:#6b7280; font-size:12px; margin-bottom:4px; }}
+                                      .value {{ color:#111827; font-weight:700; font-size:16px; }}
+                                      .foot {{ color:#6b7280; font-size:12px; margin-top:18px; }}
+                                      .brand {{ color:{brand_hex}; font-weight:700; }}
+                                    </style>
+                                  </head>
+                                  <body>
+                                    <div class=\"header\">
+                                      <div style=\"font-weight:800; letter-spacing:.5px;\">BUS 54</div>
+                                      <h1>Ticket</h1>
+                                    </div>
+                                    <div class=\"ticket\">
+                                      <div class=\"grid\">
+                                        <div>
+                                          <div class=\"label\">Passenger</div>
+                                          <div class=\"value\">{customer_name or 'N/A'}</div>
+                                        </div>
+                                        <div>
+                                          <div class=\"label\">Bus Company</div>
+                                          <div class=\"value\">{bus_name}</div>
+                                        </div>
+                                        <div>
+                                          <div class=\"label\">From</div>
+                                          <div class=\"value\">{departure_location}</div>
+                                        </div>
+                                        <div>
+                                          <div class=\"label\">To</div>
+                                          <div class=\"value\">{destination}</div>
+                                        </div>
+                                        <div>
+                                          <div class=\"label\">Departure</div>
+                                          <div class=\"value\">{departure_time}</div>
+                                        </div>
+                                        <div>
+                                          <div class=\"label\">Arrival</div>
+                                          <div class=\"value\">{arrival_time}</div>
+                                        </div>
+                                        <div>
+                                          <div class=\"label\">Issued At</div>
+                                          <div class=\"value\">{issued_at}</div>
+                                        </div>
+                                        <div>
+                                          <div class=\"label\">Ticket ID</div>
+                                          <div class=\"value\">{ticket_id}</div>
+                                        </div>
+                                      </div>
+                                      <div class=\"foot\">Please arrive 30 minutes before departure. Bring a valid ID. <span class=\"brand\">Bus 54</span></div>
+                                    </div>
+                                  </body>
+                                </html>
+                                """
+
+                                # Save HTML content to file system
+                                with open("ticket.html", "w", encoding="utf-8") as f:
+                                    f.write(html_content)
+                                
+                                st.session_state["ticket_html"] = html_content
+                                b64_html = base64.b64encode(html_content.encode("utf-8")).decode("utf-8")
+                                data_url = f"data:text/html;base64,{b64_html}"
+
+                                safe_time = (departure_time or "").replace(":", "-")
+                                html_filename = f"bus54_ticket_{ticket_id}_{destination}_{safe_time}.html"
+
+                                st.session_state["ticket_ready"] = True
+                                st.session_state["ticket_html_data_url"] = data_url
+                                st.session_state["ticket_html_filename"] = html_filename
+
+                                return f"Ticket HTML generated for {departure_location} → {destination} at {departure_time}. Use 'Download Ticket' to open."
+
                             def book_bus_ticket(
                                 departure_time: str, 
                                 departure_location: str, 
@@ -523,7 +682,7 @@ def main():
                                     print(f"Error updating CSV: {str(e)}")
                                                                             
                                 # Return a detailed confirmation message
-                                return f"Bus ticket booked successfully!\n\nDetails:\n- Ticket ID: {ticket['ticket_id']}\n- Departure: {departure_location} at {departure_time}\n- Arrival: {destination} at {arrival_time}\n- Bus: {bus_name}\n- Available Seats: {available_seats}"
+                                return f"Bus ticket booked successfully!\n\nDetails:\n- Ticket ID: {ticket['ticket_id']}\n- Departure: {departure_location} at {departure_time}\n- Arrival: {destination} at {arrival_time}\n- Bus: {bus_name}\n- Available Seats: {available_seats}\n\n⚠️ IMPORTANT: This booking is reserved for 24 hours. You must complete payment within 24 hours or your booking will be automatically cancelled and the seat will be released."
                             
                             def get_my_bookings():
                                 """
@@ -560,7 +719,7 @@ def main():
                                 """
                                 return user_information
 
-                            agent_toolset = FunctionToolset([get_entire_bus_schedule, book_bus_ticket, get_my_bookings, get_user_information])
+                            agent_toolset = FunctionToolset([get_entire_bus_schedule, book_bus_ticket, get_my_bookings, get_user_information, download_pdf])
 
                             # Phase 2: Stream user-friendly response
                             # Second agent call
@@ -617,6 +776,20 @@ def main():
                                             {safe_text}
                                         </div>
                                         """, unsafe_allow_html=True)
+
+                                        # If a ticket was generated, add a clear clickable link below
+                                        if st.session_state.get("ticket_ready") and st.session_state.get("ticket_html_data_url"):
+                                            ticket_url = st.session_state.get("ticket_html_data_url")
+                                            st.markdown(
+                                                f"""
+                                                <div class="response-container" style="margin-top: 8px;">
+                                                    <a href="{ticket_url}" target="_blank" rel="noopener" style="color: #0066cc; text-decoration: underline; font-weight: 600;">
+                                                        Open/Download Ticket
+                                                    </a>
+                                                </div>
+                                                """,
+                                                unsafe_allow_html=True,
+                                            )
                                         
                             
                             # Store in unified conversation structure

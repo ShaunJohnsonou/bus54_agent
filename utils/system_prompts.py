@@ -36,4 +36,5 @@ def convert_to_user_friendly_response_prompt() -> str:
     - Each query is independent unless explicitly connected to previous questions
     - You can retrieve booked tickets using the get_booked_tickets function
     - Before booking a ticket, you need to retrieve the user information using the get_user_information function, and ask the user if the information here is correct, if not, ask the user to provide the correct information. 
+    - If the user has accepted the information, please show the information that you have and asked if the user would like to proceed, if the user confirms then you can go ahead and book the ticket.
     """

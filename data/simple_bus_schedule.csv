@@ -1,9 +1,9 @@
 departure_time,departure_location,destination,arrival_time,bus_name,available_seats
-21:30,Port Harcourt,Akure,04:22,Regional Transit,36
-09:15,Katsina,Enugu,15:30,City Link,57
-14:30,Enugu,Jos,15:16,Suburban Connect,43
+21:30,Port Harcourt,Akure,04:22,Regional Transit,30
+09:15,Katsina,Enugu,15:30,City Link,54
+14:30,Enugu,Jos,15:16,Suburban Connect,41
 17:00,Ibadan,Okene,22:01,Urban Commuter,19
-17:15,Benin City,Warri,23:12,Intercity Express,59
+17:15,Benin City,Warri,23:12,Intercity Express,57
 16:45,Benin City,Kaduna,19:56,Western Flyer,49
 09:30,Ibadan,Port Harcourt,11:33,Intercity Express,56
 20:00,Onitsha,Okene,22:40,City Link,20

@@ -5,3 +5,5 @@ numpy
 faker
 pyarrow
 duckdb
+reportlab
+Pillow
